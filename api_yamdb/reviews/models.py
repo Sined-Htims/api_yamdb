@@ -1,7 +1,6 @@
 import datetime
 
-# from django.core.exceptions import ValidationError
-from django.core.validators import MinValueValidator, MaxValueValidator
+from django.core.validators import MaxValueValidator, MinValueValidator
 from django.contrib.auth import get_user_model
 from django.db import models
 
@@ -11,7 +10,9 @@ User = get_user_model()
 class Genre(models.Model):
     """Модель жанров."""
     name = models.CharField(
-        verbose_name='Название', max_length=256, unique=True
+        verbose_name='Название',
+        max_length=256,
+        unique=True
     )
     slug = models.SlugField(verbose_name='Слаг', max_length=50, unique=True)
 
@@ -26,7 +27,9 @@ class Genre(models.Model):
 class Category(models.Model):
     """Модель категорий."""
     name = models.CharField(
-        verbose_name='Название', max_length=256, unique=True
+        verbose_name='Название',
+        max_length=256,
+        unique=True
     )
     slug = models.SlugField(verbose_name='Слаг', max_length=50, unique=True)
 
@@ -39,8 +42,7 @@ class Category(models.Model):
 
 
 class Title(models.Model):
-    """Моедль произведений."""
-    # rating хотел сделать на уровне БД, проще сделать на уровне сериализатора
+    """Модель произведений."""
     name = models.CharField(max_length=256, verbose_name='Название')
     year = models.IntegerField(
         verbose_name='Год выпуска',
@@ -51,10 +53,13 @@ class Title(models.Model):
     )
     description = models.TextField(verbose_name='Описание', blank=True)
     genre = models.ManyToManyField(
-        Genre, through='TitleGenre'
+        Genre,
+        through='TitleGenre'
     )
     category = models.ForeignKey(
-        Category, on_delete=models.CASCADE, related_name='category'
+        Category,
+        on_delete=models.CASCADE,
+        related_name='category'
     )
 
     class Meta:
@@ -72,7 +77,7 @@ class TitleGenre(models.Model):
 
     class Meta:
         verbose_name = 'Жанр и произведение'
-        verbose_name_plural = 'Жанры и произведениея'
+        verbose_name_plural = 'Жанры и произведения'
 
     def __str__(self):
         return f"Произведение: {self.title}, Жанр: {self.genre}"
@@ -80,68 +85,62 @@ class TitleGenre(models.Model):
 
 class Review(models.Model):
     """Модель отзывов."""
-    CHOICES_SCORE = (
-        (1, 1),
-        (2, 2),
-        (3, 3),
-        (4, 4),
-        (5, 5),
-        (6, 6),
-        (7, 7),
-        (8, 8),
-        (9, 9),
-        (10, 10)
-    )
     title = models.ForeignKey(
-        Title, on_delete=models.CASCADE, related_name='title'
+        Title,
+        on_delete=models.CASCADE,
+        related_name='title'
     )
     text = models.TextField(verbose_name='Текст отзыва')
     author = models.ForeignKey(
-        User, on_delete=models.CASCADE, related_name='reviwes_author'
+        User,
+        on_delete=models.CASCADE,
+        related_name='reviwes_author'
     )
     score = models.PositiveSmallIntegerField(
-        verbose_name='Рейтинг', choices=CHOICES_SCORE
+        verbose_name='Рейтинг',
+        validators=[
+            MinValueValidator(1),
+            MaxValueValidator(10)
+        ]
     )
     pub_date = models.DateTimeField(
-        verbose_name='', auto_now_add=True, editable=True
+        verbose_name='',
+        auto_now_add=True,
+        editable=True
     )
 
     class Meta:
         verbose_name = 'Отзыв'
         verbose_name_plural = 'Отзывы'
-        # Один из вариантов фикса ошибки который не сработал
-        # constraints = [
-        #     models.UniqueConstraint(
-        #         fields=['title', 'author'],
-        #         name='unique_review'
-        #     ),
-        # ]
+        # Один из вариантов фикса ошибки
+        constraints = [
+            models.UniqueConstraint(
+                fields=['title', 'author'],
+                name='unique_review'
+            ),
+        ]
 
     def __str__(self):
         return self.text
 
-    # Один из вариантов фикса ошибки который не сработал
-    # def clean(self):
-    #     if Review.objects.filter(
-    #         title=self.title, author=self.author
-    #     ).exists():
-    #         raise ValidationError(
-    #             "Вы уже оставляли отзыв на это произведение."
-    #         )
-    #     super().clean()
-
 
 class Comment(models.Model):
-    """Модель комментрий."""
+    """Модель комментарий."""
     review = models.ForeignKey(
-        Review, on_delete=models.CASCADE, related_name='reviews'
+        Review,
+        on_delete=models.CASCADE,
+        related_name='reviews'
     )
     text = models.TextField(verbose_name='Текст комментария')
     author = models.ForeignKey(
-        User, on_delete=models.CASCADE, related_name='comments_author'
+        User,
+        on_delete=models.CASCADE,
+        related_name='comments_author'
     )
     pub_date = models.DateTimeField(
-        verbose_name='', auto_now_add=True, editable=True
+        verbose_name='',
+        auto_now_add=True,
+        editable=True
     )
 
     class Meta:

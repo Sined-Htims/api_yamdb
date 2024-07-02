@@ -10,11 +10,3 @@ class ListCreateDeleteMixin(
     Для моделей Genre и Category.
     """
     pass
-
-
-class PostMixin(mixins.CreateModelMixin, viewsets.GenericViewSet):
-    """
-    Миксин для отправки POST-запросов, предназначеный для работы с
-    эндпоинтами signup и token.
-    """
-    pass

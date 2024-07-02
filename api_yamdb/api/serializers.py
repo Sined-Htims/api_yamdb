@@ -1,10 +1,8 @@
 from django.conf import settings
 from django.contrib.auth import get_user_model
-from django.contrib.auth.tokens import default_token_generator
 from django.db.models import Avg
 from django.shortcuts import get_object_or_404
 from rest_framework import serializers
-from rest_framework_simplejwt.tokens import AccessToken  # RefreshToken
 # Один из вариантов фикса ошибки который не сработал
 # from rest_framework.validators import UniqueTogetherValidator
 
@@ -19,50 +17,30 @@ User = get_user_model()
 class AuthSingnupSerializer(serializers.Serializer):
     """Сериализатор для регистрации пользователя."""
     username = serializers.CharField(
-        max_length=settings.USERNAME_MAX_LENGTH, required=True,
+        max_length=settings.USERNAME_MAX_LENGTH,
         validators=(validators.username_validator, validators.username_not_me),
+        required=True,
     )
     email = serializers.EmailField(
-        max_length=settings.EMAIL_MAX_LENGTH, required=True,
+        max_length=settings.EMAIL_MAX_LENGTH,
+        required=True,
     )
 
 
 class AuthTokenSerializer(serializers.Serializer):
     """
-    Сериализатор для ПОТДВЕРЖДЕНИЯ регистрации пользователя и выдачи токена.
+    Сериализатор для ПОДТВЕРЖДЕНИЯ регистрации пользователя и выдачи токена.
     """
-    username = serializers.CharField(max_length=150, write_only=True)
-    confirmation_code = serializers.CharField(max_length=39, write_only=True)
-    token = serializers.SerializerMethodField()
-    # Если понадобится токен для обновления токена доступа:
-    # refresh_token = serializers.SerializerMethodField()
-
-    def validate(self, data):
-        # Проверяем существует ли пользователь с веденным именем.
-        username = data.get('username')
-        user = get_object_or_404(User, username=username)
-        # Получаем код подверждения веденный пользователем и проверяем на
-        # соответствие с отправленным.
-        confirmation_code = data.get('confirmation_code')
-        if not default_token_generator.check_token(user, confirmation_code):
-            raise serializers.ValidationError(
-                'Указан неверный код подтверждения.'
-            )
-        return data
-
-    def get_token(self, obj):
-        # Генерируем токен доступа для пользователя.
-        user = User.objects.get(username=obj['username'])
-        token = AccessToken.for_user(user)
-        return str(token)
-
-    # def get_refresh_token(self, obj):
-    #     # Генерируем обновляющий токен для смены токена доступа.
-    #     # Думаю убрать т.к. на эндпоинте auth/token/ можно обновить токен,
-    #     # с помощью того же кода подтверждения.
-    #     user = User.objects.get(username=obj['username'])
-    #     refresh = RefreshToken.for_user(user)
-    #     return str(refresh)
+    username = serializers.CharField(
+        max_length=150,
+        write_only=True,
+        required=True
+    )
+    confirmation_code = serializers.CharField(
+        max_length=39,
+        write_only=True,
+        required=True
+    )
 
 
 class CategorySerializer(serializers.ModelSerializer):
@@ -99,7 +77,8 @@ class ReviewSerializer(serializers.ModelSerializer):
     class Meta:
         model = Review
         fields = ('id', 'text', 'author', 'score', 'pub_date')
-        # Один из вариантов фикса ошибки который не сработал
+        # read_only_fields = ('title',)
+        # # Один из вариантов фикса ошибки который не сработал
         # validators = [
         #     UniqueTogetherValidator(
         #         queryset=Review.objects.all(),
@@ -125,43 +104,35 @@ class TitleSerializer(serializers.ModelSerializer):
         )
 
     def get_rating(self, obj):
-        """Расчет средней оценки произведения"""  # Хотел сделать в модели
+        """Расчет средней оценки произведения"""
         review = Review.objects.filter(
             title_id=obj.id).aggregate(res=Avg('score'))
         return review.get('res')
 
     def create(self, validated_data):
-        # Создание записи в моделе Title.
+        # Создание записи в модели Title.
         # Сохраняем в переменные полученные данные.
         genre_list = validated_data.pop('genre')
         category_name = validated_data.pop('category')
-        # Один из вариантов фикса ошибки который не сработал
-        # category_name = category.pop('name')
-        # category_slug = category.pop('slug')
         # Получаем объект модели Category или выдаем ошибку.
         current_category = get_object_or_404(Category, name=category_name)
-        # Создаем объект на основе введеных данных, без жанров.
+        # Создаем объект на основе введенных данных, без жанров.
         title = Title.objects.create(
             category=current_category, **validated_data
         )
         # Распаковываем все жанры в переменную.
         for genre_dict in genre_list:
 
-            # Почему словарь в for сразу  распаковался?
+            # Почему словарь в for сразу распаковался?
             # print(genre_dict)
-            # genre_name = genre_dict.pop('Genre')
-            # print(genre_name)
+            # genre = genre_dict.pop('Genre')
+            # print(genre)
 
             # Получаем объект модели Genre или выдаем ошибку.
             current_genre = get_object_or_404(Genre, name=genre_dict)
             # Добавляем к произведению жанры.
             TitleGenre.objects.create(title=title, genre=current_genre)
         return title
-
-# Если бы нужно было в произведениях еще создавать категорию и жанры то,
-# необходимо изменить поля сериализатора с serializers.SlugRelatedField,
-# на вложенные (category=CategorySerializer()) сериализаторы и использовать
-# метод get_or_create()
 
 
 class TitleForListRetrieveSerializer(TitleSerializer):

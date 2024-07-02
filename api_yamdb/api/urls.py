@@ -10,9 +10,6 @@ from api.views import (
 app_name = 'api'
 
 router = routers.DefaultRouter()
-router.register(r'auth/signup', AuthSignupViewSet, basename='signup')
-# Эндпоинт auth/token/ если делаем view через миксин
-router.register(r'auth/token', AuthTokenViewSet, basename='token')
 router.register(r'users', UserViewSet)
 router.register(r'categories', CategoryViewSet)
 router.register(r'genres', GenreViewSet)
@@ -26,6 +23,6 @@ router.register(
 
 urlpatterns = [
     path('', include(router.urls)),
-    # Эндпоинт auth/token/ если делаем view через функцию
-    # path('auth/token/', AuthTokenViewSet.as_view(), name='token'),
+    path('auth/signup/', AuthSignupViewSet.as_view(), name='siginup'),
+    path('auth/token/', AuthTokenViewSet.as_view(), name='token'),
 ]

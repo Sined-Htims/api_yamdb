@@ -6,7 +6,7 @@ from django.core.mail import send_mail
 
 # Для себя
 def get_code():
-    """Функция для гкнирирования кода подтверждения"""
+    """Функция для генерирования кода подтверждения"""
     # Диапазоны кодов ASCII для цифр, заглавных и строчных букв
     digits = string.digits
     uppercase_letters = string.ascii_uppercase

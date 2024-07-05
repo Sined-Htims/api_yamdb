@@ -30,7 +30,6 @@ class CustomUser(AbstractUser):
         max_length=max(len(role) for role, _ in ROLE_CHOICES),
         choices=ROLE_CHOICES, default=USER
     )
-    is_moderator = models.BooleanField(verbose_name='Moderator', default=False)
     bio = models.TextField(verbose_name='О себе', blank=True)
 
     @property

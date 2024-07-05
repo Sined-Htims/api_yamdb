@@ -35,7 +35,7 @@ class Category(models.Model):
 
     class Meta:
         verbose_name = 'Категория'
-        verbose_name_plural = 'Каттегории'
+        verbose_name_plural = 'Категории'
 
     def __str__(self):
         return self.name
@@ -112,7 +112,6 @@ class Review(models.Model):
     class Meta:
         verbose_name = 'Отзыв'
         verbose_name_plural = 'Отзывы'
-        # Один из вариантов фикса ошибки
         constraints = [
             models.UniqueConstraint(
                 fields=['title', 'author'],

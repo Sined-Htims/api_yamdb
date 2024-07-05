@@ -26,8 +26,6 @@ class AuthSignupViewSet(views.APIView):
     permission_classes = (permissions.AllowAny,)
 
     def post(self, request):
-        # Создаем пользователя по его данным и и отправляем код подтверждения
-        # на указанный имейл.
         serializer = AuthSingnupSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         username = serializer.validated_data.get('username')
@@ -51,13 +49,11 @@ class AuthTokenViewSet(views.APIView):
     permission_classes = (permissions.AllowAny,)
 
     def post(self, request):
-        # Получение токена на основе кода подтверждения и имени пользователя
         serializer = AuthTokenSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         username = serializer.validated_data.get('username')
         confirmation_code = serializer.validated_data.get('confirmation_code')
         user = get_object_or_404(User, username=username)
-        # Проверка кода подтверждения
         if default_token_generator.check_token(user, confirmation_code):
             token = AccessToken.for_user(user)
             return Response(
@@ -86,7 +82,6 @@ class CommentViewSet(viewsets.ModelViewSet):
         permissions.IsAuthenticatedOrReadOnly,
         IsAuthorOrModeratorOrAdmin
     )
-    # Указываем с какими методами запросов работает эндпоинт
     http_method_names = ['get', 'head', 'options', 'post', 'patch', 'delete']
 
     def get_permissions(self):
@@ -99,11 +94,9 @@ class CommentViewSet(viewsets.ModelViewSet):
         return get_object_or_404(Review, pk=self.kwargs.get('review_id'))
 
     def get_queryset(self):
-        # Получаем все комментарии к определенному отзыву.
         return Comment.objects.filter(review=self.get_review())
 
     def perform_create(self, serializer):
-        # Записываем: Кто и к какому отзыву был добавлен комментарий.
         return serializer.save(
             author=self.request.user, review=self.get_review()
         )
@@ -139,20 +132,14 @@ class ReviewViewSet(viewsets.ModelViewSet):
         return get_object_or_404(Title, pk=self.kwargs.get('title_id'))
 
     def get_queryset(self):
-        # Получаем все отзывы для определенного произведения.
         return Review.objects.filter(title=self.get_title())
 
     def perform_create(self, serializer):
-        # Если пользователь не создавал отзыв, то автоматически записываем:
-        # Кто и к какому произведению написали отзыв.
         return serializer.save(
             author=self.request.user, title=self.get_title()
         )
 
     def create(self, request, *args, **kwargs):
-        # Ограничиваем создание нескольких отзывов от одного пользователя
-        # Выглядит как костыль, не особо на уровне модели, странно что через
-        # сериализатор не работает
         try:
             return super().create(request, *args, **kwargs)
         except IntegrityError:
@@ -202,9 +189,10 @@ class UserViewSet(viewsets.ModelViewSet):
         if request.method == 'GET':
             serializer = UserMeSerializer(request.user)
             return Response(serializer.data)
+        partial: bool = request.method == 'PATCH'
         serializer = UserMeSerializer(
             request.user, data=request.data,
-            partial=request.method == 'PATCH'
+            partial=partial
         )
         serializer.is_valid(raise_exception=True)
         serializer.save()
